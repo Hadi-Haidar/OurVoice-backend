@@ -1,6 +1,7 @@
 const { supabaseAdmin } = require('../config/db');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid'); // I need to check if uuid is installed, if not I'll use Date.now()
+const crypto = require('crypto');
+
 
 /**
  * Uploads a file buffer to Supabase Storage
@@ -25,7 +26,8 @@ const uploadToSupabase = async (fileBuffer, fileName, mimeType) => {
 
         // 2. Generate unique filename
         const ext = path.extname(fileName) || (mimeType.includes('video') ? '.mp4' : '.jpg');
-        const uniqueName = `${uuidv4()}${ext}`;
+        const uniqueName = `${crypto.randomUUID()}${ext}`;
+
         const filePath = `uploads/${uniqueName}`;
 
         // 3. Upload file
