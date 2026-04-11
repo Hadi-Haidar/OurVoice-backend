@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS issues (
     status TEXT DEFAULT 'pending',
     image_url TEXT,
     video_url TEXT,
+    is_anonymous BOOLEAN DEFAULT false,
     author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );

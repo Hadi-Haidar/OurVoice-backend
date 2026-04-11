@@ -6,7 +6,7 @@ const { uploadToSupabase } = require('../../utils/storage');
 // @access  Private
 const createIssue = async (req, res) => {
     try {
-        const { title, description, category_id, location_text, lat, lng, video_url } = req.body;
+        const { title, description, category_id, location_text, lat, lng, video_url, is_anonymous } = req.body;
         let { image_url } = req.body;
 
         if (!title || !description || !category_id || !location_text) {
@@ -31,6 +31,7 @@ const createIssue = async (req, res) => {
             lng,
             image_url,
             video_url,
+            is_anonymous: is_anonymous || false,
             author_id: req.user.id
         }).select(`
             *,
@@ -105,14 +106,15 @@ const getAllIssues = async (req, res) => {
             userUpvotes = userVotes ? userVotes.map(v => v.issue_id) : [];
         }
 
-        // Transform count objects into numbers
+        // Transform count objects into numbers and handle anonymity
         const transformedIssues = issues.map(issue => ({
             ...issue,
             upvotes: issue.upvotes_count[0]?.count || 0,
             has_upvoted: userUpvotes.includes(issue.id),
             comments: issue.comments_count[0]?.count || 0,
             upvotes_count: undefined,
-            comments_count: undefined
+            comments_count: undefined,
+            author: issue.is_anonymous ? { id: null, full_name: 'Anonymous' } : issue.author
         }));
 
         return res.status(200).json({ success: true, data: transformedIssues });
@@ -159,7 +161,8 @@ const getIssueById = async (req, res) => {
             comments_count: issue.comments.length,
             has_upvoted: req.user ? issue.upvotes.some(v => v.user_id === req.user.id) : false,
             // also keep upvotes for backward compatibility or direct use if needed
-            upvotes: issue.upvotes.length 
+            upvotes: issue.upvotes.length,
+            author: issue.is_anonymous ? { id: null, full_name: 'Anonymous' } : issue.author 
         };
 
         return res.status(200).json({ success: true, data: transformedIssue });
