@@ -314,10 +314,33 @@ const resetPassword = async (req, res) => {
     }
 };
 
+// @desc    Get current logged-in user (njib l user l halli logged in)
+// @route   GET /api/auth/me
+// @access  Private
+const getMe = async (req, res) => {
+    try {
+        // req.user is populated by the protect middleware
+        const { data: user, error } = await supabaseAdmin
+            .from('users')
+            .select('id, email, full_name, is_verified, created_at')
+            .eq('id', req.user.id)
+            .single();
+
+        if (error || !user) {
+            return res.status(401).json({ success: false, message: 'User not found.' });
+        }
+
+        return res.status(200).json({ success: true, user });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
     verifyEmail,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    getMe
 };

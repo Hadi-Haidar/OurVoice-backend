@@ -54,6 +54,10 @@ const createIssue = async (req, res) => {
 const getAllIssues = async (req, res) => {
     try {
         const { category_id, status, search } = req.query;
+        const page  = Math.max(1, parseInt(req.query.page)  || 1);
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 12));
+        const from  = (page - 1) * limit;
+        const to    = from + limit - 1;
 
         let query = supabaseAdmin
             .from('issues')
@@ -63,8 +67,9 @@ const getAllIssues = async (req, res) => {
                 category:category_id (*),
                 upvotes_count:issue_upvotes(count),
                 comments_count:issue_comments(count)
-            `)
-            .order('created_at', { ascending: false });
+            `, { count: 'exact' })
+            .order('created_at', { ascending: false })
+            .range(from, to);
 
         if (category_id && category_id !== 'all') {
             query = query.eq('category_id', category_id);
@@ -78,7 +83,7 @@ const getAllIssues = async (req, res) => {
             query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,location_text.ilike.%${search}%`);
         }
 
-        const { data: issues, error } = await query;
+        const { data: issues, error, count } = await query;
 
         if (error) throw error;
 
@@ -117,7 +122,16 @@ const getAllIssues = async (req, res) => {
             author: issue.is_anonymous ? { id: null, full_name: 'Anonymous' } : issue.author
         }));
 
-        return res.status(200).json({ success: true, data: transformedIssues });
+        return res.status(200).json({
+            success: true,
+            data: transformedIssues,
+            pagination: {
+                total: count || 0,
+                page,
+                limit,
+                hasMore: to < (count - 1)
+            }
+        });
 
     } catch (error) {
         return res.status(500).json({ success: false, message: 'Server error', error: error.message });
